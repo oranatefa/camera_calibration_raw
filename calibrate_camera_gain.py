@@ -143,6 +143,7 @@ def adjust_manually(self, image_data, x=None):
 	b, stdB = cv2.meanStdDev(image[bayer == 'blue'])
 
 	histo = plt.figure('hist')
+	plt.clf()
 	plt.ion()
 	plt.show()
 	G_pos = bayer == 'green'
@@ -160,28 +161,37 @@ def adjust_manually(self, image_data, x=None):
 	plt.draw()
 	plt.pause(.001)
 	print('R:' + str(int(r)) + '  G:' + str(int(g)) + '  B:' + str(int(b)))
-	#
-	# if keyboard.is_pressed('q'):
-	# 	update_config_gain(update = {'red':'10'})
-	# if keyboard.is_pressed('a'):
-	# 	update_config_gain( update ={'red':'-10'})
-	#
-	# if keyboard.is_pressed('w'):
-	# 	update_config_gain( update ={'green':'10'})
-	# if keyboard.is_pressed('s'):
-	# 	update_config_gain(update = {'green':'-10'})
-	#
-	# if keyboard.is_pressed('e'):
-	# 	update_config_gain(update ={'blue': '10'})
-	# if keyboard.is_pressed('d'):
-	# 	update_config_gain(update ={'blue': '10'})
-	# #
+
+	if keyboard.is_pressed('q'):
+		update_config(key='red')
+
+	if keyboard.is_pressed('w'):
+		update_config(key='green')
+
+	if keyboard.is_pressed('e'):
+		update_config(key='blue')
 
 	return QtGui.QImage(color_image.data,
 	                    image_data.mem_info.width,
 	                    image_data.mem_info.height,
 	                    QtGui.QImage.Format_RGB888)
 
+
+def update_config(ini_file="raw_camera_params.ini",key = 'green',set=True):
+	config = configparser.ConfigParser()
+	config.sections()
+	config.read(ini_file, encoding='utf-8-sig')
+
+	if set:
+			val = input('update ' + key + ' to:')
+			config['Gain'][key] = val
+
+	with open(ini_file, 'w') as configfile:
+		config.write(configfile)
+
+	pParam = ueye.wchar_p()
+	pParam.value = ini_file
+	ueye.is_ParameterSet(1, ueye.IS_PARAMETERSET_CMD_LOAD_FILE, pParam, 0)
 
 def update_config_exposure(ini_file="/home/oran/Desktop/camera_params.ini",update = 0,set=False):
 	config = configparser.ConfigParser()
@@ -223,7 +233,7 @@ def update_config_gain(ini_file="/home/oran/Pictures/Settings/default-camera-set
 	pParam.value = ini_file
 	ueye.is_ParameterSet(1, ueye.IS_PARAMETERSET_CMD_LOAD_FILE, pParam, 0)
 
-def main(config_path="/home/oran/Desktop/camera_calibration/raw_camera_params.ini"):
+def main(config_path="raw_camera_params.ini"):
 	print(config_path)
 	# we need a QApplication, that runs our QT Gui Framework
 	app = PyuEyeQtApp()
@@ -277,12 +287,25 @@ def main(config_path="/home/oran/Desktop/camera_calibration/raw_camera_params.in
 	cam.exit()
 
 
-def print_picture_val(path = "/home/oran/Pictures/c10/0_20201012/low_res/2020_10_12_071223_c1c0_Unknown_blood_0_RBC_scan_pos_0_focus_lvl_0.bmp"):
+def print_picture_val(path = "/home/oran/Pictures/Test2/0_20201018/2020_10_18_031221_T2_Unknown_blood_0_RBC_scan_pos_0_focus_lvl_14.bmp"):
 	image =cv2.imread(path)
 	color_image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 
 	b,g,r = fast_mean(color_image)
+	print('B:' + str(b) + ' G:' + str(g) + ' R:' + str(r))
+
+def print_picture_val_raw(path="/home/oran/Pictures/Test2/0_20201018/2020_10_18_031221_T2_Unknown_blood_0_RBC_scan_pos_0_focus_lvl_14.bmp"):
+	image = cv2.imread(path)
+
+	bayer = mt.repmat(np.array([['red', 'green'], ['green', 'blue']]), int(image.shape[0]/ 2),
+					  int(image.shape[1] / 2))
+	r, stdR = cv2.meanStdDev(image[bayer == 'red'])
+	g, stdG = cv2.meanStdDev(image[bayer == 'green'])
+	b, stdB = cv2.meanStdDev(image[bayer == 'blue'])
+	print('B:' + str(b) + ' G:' + str(g) + ' R:' + str(r))
+
+
 if __name__ == "__main__":
-	# print_picture_val()
-	main()
+	print_picture_val_raw()
+	# main()
 
